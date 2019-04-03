@@ -7,8 +7,13 @@
 //
 
 #import <UIKit/UIKit.h>
-
+#import <AVFoundation/AVFoundation.h>
+#import <Photos/Photos.h>
 @interface ViewController : UIViewController
+- (IBAction)didTakePhoto:(id)sender;
+@property (strong, nonatomic) IBOutlet UIView *previewView;
+@property (strong, nonatomic) IBOutlet UIImageView *capturedImageView;
+
 
 
 @end
