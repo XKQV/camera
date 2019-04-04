@@ -12,6 +12,7 @@
 @property (nonatomic) AVCaptureSession *session;
 @property (nonatomic) AVCapturePhotoOutput *stillImageOutput;
 @property (nonatomic) AVCaptureVideoDataOutput *stillVideoOutput;
+@property (nonatomic) AVCaptureDeviceInput *input;
 
 @property (nonatomic) AVCaptureVideoPreviewLayer *videoPreviewLayer;
 @end
@@ -22,7 +23,7 @@
     [super viewDidLoad];
     
     self.session = [AVCaptureSession new];
-    self.session.sessionPreset = AVCaptureSessionPresetPhoto;
+//    self.session.sessionPreset = AVCaptureSessionPresetPhoto;
     AVCaptureDevice *backCamera = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
     if (!backCamera) {
         NSLog(@"Unable to access back camera!");
@@ -30,9 +31,11 @@
     }
     
     NSError *error;
-    AVCaptureDeviceInput *input = [AVCaptureDeviceInput deviceInputWithDevice:backCamera
+    
+    self.input = [AVCaptureDeviceInput deviceInputWithDevice:backCamera
                                                                         error:&error];
-//    if (!error) {
+    [self.session addInput:self.input];
+    if (!error) {
 //
 //        self.stillImageOutput = [AVCapturePhotoOutput new];
 //        self.stillVideoOutput = [AVCaptureVideoDataOutput new];
@@ -41,23 +44,28 @@
 //            [self.session addInput:input];
 //            [self.session addOutput:self.stillImageOutput];
 //            [self setupLivePreview];
-//        }
-//    }
-//    else {
-//        NSLog(@"Error Unable to initialize back camera: %@", error.localizedDescription);
-//    }
-    AVCapturePhotoSettings *settings = [AVCapturePhotoSettings photoSettingsWithFormat:@{AVVideoCodecKey: AVVideoCodecTypeJPEG}];
-    //
-    AVCaptureVideoDataOutput *output = [[AVCaptureVideoDataOutput alloc] init];
-    output.videoSettings = @{ (NSString *)kCVPixelBufferPixelFormatTypeKey:@(kCVPixelFormatType_32BGRA) };
-    [output setSampleBufferDelegate:self queue:dispatch_get_main_queue()];
-    [self.session addOutput:output];
-    [self.session addInput:input];
-    [self setupLivePreview];
+//        AVCapturePhotoSettings *settings = [AVCapturePhotoSettings photoSettingsWithFormat:@{AVVideoCodecKey: AVVideoCodecTypeJPEG}];
+        //
+        //    AVCaptureVideoDataOutput *output = [[AVCaptureVideoDataOutput alloc] init];
+        self.stillVideoOutput = [AVCaptureVideoDataOutput new];
+        self.stillVideoOutput.videoSettings = @{ (NSString *)kCVPixelBufferPixelFormatTypeKey:@(kCVPixelFormatType_32BGRA) };
+        [self.stillVideoOutput setSampleBufferDelegate:self queue:dispatch_get_main_queue()];
+//        self.stillVideoOutput.alwaysDiscardsLateVideoFrames = NO;
+        if ([self.session canAddOutput:self.stillVideoOutput]) {
+             [self.session addOutput:self.stillVideoOutput];
+        }
+
+        [self setupLivePreview];
+        }
+    
+    else {
+        NSLog(@"Error Unable to initialize back camera: %@", error.localizedDescription);
+    }
+
 
     //
     
-    [self.stillImageOutput capturePhotoWithSettings:settings delegate:self];
+//    [self.stillImageOutput capturePhotoWithSettings:settings delegate:self];
     
 }
 - (void)setupLivePreview {
@@ -73,7 +81,8 @@
         dispatch_async(globalQueue, ^{
             [self.session startRunning];
             dispatch_async(dispatch_get_main_queue(), ^{
-                self.videoPreviewLayer.frame = self.previewView.bounds;
+                self.videoPreviewLayer.frame = self.view.bounds;
+                
             });
         });
     }
@@ -87,9 +96,6 @@
 - (void) captureOutput:(AVCaptureOutput *) captureOutput didOutputSampleBuffer:(CMSampleBufferRef) sampleBuffer fromConnection:(AVCaptureConnection *) connection{
     
     UIImage *image = [self imageFromSampleBuffer:sampleBuffer];
-    
-    // VideoCaputreManagerOutputDelegateのデリゲートメソッドを呼び出す
-//    [self.stillVideoOutput captureOutput:image];
     
 }
 
