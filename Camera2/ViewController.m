@@ -18,7 +18,7 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-
+    
     self.session = [AVCaptureSession new];
     self.session.sessionPreset = AVCaptureSessionPresetPhoto;
     AVCaptureDevice *backCamera = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
@@ -31,7 +31,7 @@
     AVCaptureDeviceInput *input = [AVCaptureDeviceInput deviceInputWithDevice:backCamera
                                                                         error:&error];
     if (!error) {
-    
+        
         self.stillImageOutput = [AVCapturePhotoOutput new];
         
         if ([self.session canAddInput:input] && [self.session canAddOutput:self.stillImageOutput]) {
@@ -84,7 +84,7 @@
         UITapGestureRecognizer *tapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(gestureHandlerMethod:)];
         [self.capturedImageView setUserInteractionEnabled:YES];
         [self.capturedImageView addGestureRecognizer:tapRecognizer];
-
+        
     }
 }
 
@@ -104,14 +104,14 @@
     
 }
 -(void)gestureHandlerMethod:(UITapGestureRecognizer*)sender {
-
-        
+    
+    
     UIImagePickerController *picker = [[UIImagePickerController alloc]init];
     picker.delegate = self;
     picker.allowsEditing = YES;
     picker.sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
     [self presentViewController:picker animated:YES completion:NULL];
-
+    
 }
 
 @end
