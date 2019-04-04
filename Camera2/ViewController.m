@@ -11,6 +11,8 @@
 @interface ViewController ()
 @property (nonatomic) AVCaptureSession *session;
 @property (nonatomic) AVCapturePhotoOutput *stillImageOutput;
+@property (nonatomic) AVCaptureVideoDataOutput *stillVideoOutput;
+
 @property (nonatomic) AVCaptureVideoPreviewLayer *videoPreviewLayer;
 @end
 
@@ -30,20 +32,33 @@
     NSError *error;
     AVCaptureDeviceInput *input = [AVCaptureDeviceInput deviceInputWithDevice:backCamera
                                                                         error:&error];
-    if (!error) {
-        
-        self.stillImageOutput = [AVCapturePhotoOutput new];
-        
-        if ([self.session canAddInput:input] && [self.session canAddOutput:self.stillImageOutput]) {
-            
-            [self.session addInput:input];
-            [self.session addOutput:self.stillImageOutput];
-            [self setupLivePreview];
-        }
-    }
-    else {
-        NSLog(@"Error Unable to initialize back camera: %@", error.localizedDescription);
-    }
+//    if (!error) {
+//
+//        self.stillImageOutput = [AVCapturePhotoOutput new];
+//        self.stillVideoOutput = [AVCaptureVideoDataOutput new];
+//        if ([self.session canAddInput:input] && [self.session canAddOutput:self.stillImageOutput]) {
+//
+//            [self.session addInput:input];
+//            [self.session addOutput:self.stillImageOutput];
+//            [self setupLivePreview];
+//        }
+//    }
+//    else {
+//        NSLog(@"Error Unable to initialize back camera: %@", error.localizedDescription);
+//    }
+    AVCapturePhotoSettings *settings = [AVCapturePhotoSettings photoSettingsWithFormat:@{AVVideoCodecKey: AVVideoCodecTypeJPEG}];
+    //
+    AVCaptureVideoDataOutput *output = [[AVCaptureVideoDataOutput alloc] init];
+    output.videoSettings = @{ (NSString *)kCVPixelBufferPixelFormatTypeKey:@(kCVPixelFormatType_32BGRA) };
+    [output setSampleBufferDelegate:self queue:dispatch_get_main_queue()];
+    [self.session addOutput:output];
+    [self.session addInput:input];
+    [self setupLivePreview];
+
+    //
+    
+    [self.stillImageOutput capturePhotoWithSettings:settings delegate:self];
+    
 }
 - (void)setupLivePreview {
     
@@ -67,6 +82,46 @@
     AVCapturePhotoSettings *settings = [AVCapturePhotoSettings photoSettingsWithFormat:@{AVVideoCodecKey: AVVideoCodecTypeJPEG}];
     
     [self.stillImageOutput capturePhotoWithSettings:settings delegate:self];
+}
+
+- (void) captureOutput:(AVCaptureOutput *) captureOutput didOutputSampleBuffer:(CMSampleBufferRef) sampleBuffer fromConnection:(AVCaptureConnection *) connection{
+    
+    UIImage *image = [self imageFromSampleBuffer:sampleBuffer];
+    
+    // VideoCaputreManagerOutputDelegateのデリゲートメソッドを呼び出す
+//    [self.stillVideoOutput captureOutput:image];
+    
+}
+
+- (UIImage *) imageFromSampleBuffer:(CMSampleBufferRef) sampleBuffer
+{
+    // イメージバッファの取得
+    CVImageBufferRef buffer = CMSampleBufferGetImageBuffer(sampleBuffer);
+    
+    // イメージバッファのロック
+    CVPixelBufferLockBaseAddress(buffer, 0);
+    // イメージバッファ情報の取得
+    uint8_t *base = CVPixelBufferGetBaseAddress(buffer);
+    size_t width = CVPixelBufferGetWidth(buffer);
+    size_t height = CVPixelBufferGetHeight(buffer);
+    size_t bytesPerRow = CVPixelBufferGetBytesPerRow(buffer);
+    
+    // ビットマップコンテキストの作成
+    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+    CGContextRef cgContext = CGBitmapContextCreate(base, width, height, 8, bytesPerRow, colorSpace,
+                                                   kCGBitmapByteOrder32Little | kCGImageAlphaPremultipliedFirst);
+    CGColorSpaceRelease(colorSpace);
+    
+    // 画像の作成
+    CGImageRef cgImage = CGBitmapContextCreateImage(cgContext);
+    UIImage* image = [UIImage imageWithCGImage:cgImage scale:1.0f
+                                   orientation:UIImageOrientationRight]; // 90度右に回転
+    CGImageRelease(cgImage);
+    CGContextRelease(cgContext);
+    
+    // イメージバッファのアンロック
+    CVPixelBufferUnlockBaseAddress(buffer, 0);
+    return image;
 }
 
 - (void)captureOutput:(AVCapturePhotoOutput *)output didFinishProcessingPhoto:(AVCapturePhoto *)photo error:(nullable NSError *)error {
