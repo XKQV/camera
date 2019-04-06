@@ -13,6 +13,7 @@
 @property (nonatomic) AVCapturePhotoOutput *stillImageOutput;
 @property (nonatomic) AVCaptureVideoDataOutput *stillVideoOutput;
 @property (nonatomic) AVCaptureDeviceInput *input;
+@property (nonatomic) AVCaptureDevice *backCamera;
 
 @property (nonatomic) AVCaptureVideoPreviewLayer *videoPreviewLayer;
 @end
@@ -24,15 +25,16 @@
     
     self.session = [AVCaptureSession new];
 //    self.session.sessionPreset = AVCaptureSessionPresetPhoto;
-    AVCaptureDevice *backCamera = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
-    if (!backCamera) {
+    
+    _backCamera = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
+    if (!_backCamera) {
         NSLog(@"Unable to access back camera!");
         return;
     }
     
     NSError *error;
     
-    self.input = [AVCaptureDeviceInput deviceInputWithDevice:backCamera
+    self.input = [AVCaptureDeviceInput deviceInputWithDevice:_backCamera
                                                                         error:&error];
     [self.session addInput:self.input];
     if (!error) {
@@ -174,5 +176,8 @@
     [self presentViewController:picker animated:YES completion:NULL];
     
 }
+
+
+
 
 @end
